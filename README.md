@@ -51,8 +51,9 @@ truffle init
              deployer. Deploy(Healthcare);
     };
    ```
-  6.Configure Metamask to Ganache
-  - 7.Update truffle-config.js:
+ - 6.Configure Metamask to Ganache
+  
+  7.Update truffle-config.js:
    ``` 
   module.exports = {
   networks: {
