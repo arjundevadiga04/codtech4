@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare DApp</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #97d0dc; /* Dark background */
+            color: #0e1313;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #045b66;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                text-shadow: 0 0 10px #80deea, 0 0 20px #80deea, 0 0 30px #80deea, 0 0 40px #80deea;
+            }
+            50% {
+                text-shadow: 0 0 5px #80deea, 0 0 10px #80deea, 0 0 15px #80deea, 0 0 20px #80deea;
+            }
+        }
+
+        button {
+            font-size: 1.5rem;
+            color: #b0f1fa;
+            background: #0e5b79;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #076b92;
+        }
+
+        input {
+            font-size: 1.2rem;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            color: #333;
+            background-color: #e0f7fa;
+        }
+
+        #patientInfo {
+            font-size: 1.2rem;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 class="animate__animated animate__pulse">CARECRYPT</h1>
+    </header>
+
+    <div class="container">
+        <button id="connectButton" class="animate__animated animate__pulse">Connect MetaMask</button>
+        <p id="accountDisplay">No account connected</p>
+        <div>
+            <input id="nameInput" placeholder="Name" />
+            <input id="ageInput" placeholder="Age" />
+            <input id="medicalHistoryInput" placeholder="Medical History" />
+            <button id="addPatientButton" class="animate__animated animate__pulse">Add Patient</button>
+        </div>
+        <button id="getPatientButton" class="animate__animated animate__pulse">Get Patient Info</button>
+        <p id="patientInfo">No patient info</p>
+    </div>
+
+    <div class="loader" id="loader"></div>
+    
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        let web3;
+        let contract;
+        let account;
+
+        const contractABI = [
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "getPatient",
+                "outputs": [
+                    { "name": "name", "type": "string" },
+                    { "name": "age", "type": "uint256" },
+                    { "name": "medicalHistory", "type": "string" }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    { "name": "name", "type": "string" },
+                    { "name": "age", "type": "uint256" },
+                    { "name": "medicalHistory", "type": "string" }
+                ],
+                "name": "addPatient",
+                "outputs": [],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        const contractAddress = "0xF51ef56C37a20fe8B14dC137b2C8b8198309e3a1"; // Replace with your contract address
+
+        window.addEventListener('load', async () => {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    await window.ethereum.enable(); // Request account access
+                    const accounts = await web3.eth.getAccounts();
+                    account = accounts[0];
+                    contract = new web3.eth.Contract(contractABI, contractAddress);
+                } catch (error) {
+                    console.error("User denied account access");
+                }
+            } else {
+                alert("Please install MetaMask to use this application.");
+            }
+        });
+
+        $(document).ready(async () => {
+            const connectButton = $('#connectButton');
+            const accountDisplay = $('#accountDisplay');
+            const nameInput = $('#nameInput');
+            const ageInput = $('#ageInput');
+            const medicalHistoryInput = $('#medicalHistoryInput');
+            const addPatientButton = $('#addPatientButton');
+            const getPatientButton = $('#getPatientButton');
+            const patientInfo = $('#patientInfo');
+
+            connectButton.click(async () => {
+                if (typeof window.ethereum !== 'undefined') {
+                    try {
+                        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                        account = accounts[0];
+                        accountDisplay.text(`Connected account: ${account}`);
+                    } catch (error) {
+                        console.error('User denied account access:', error);
+                        alert('Please allow MetaMask to connect to this site.');
+                    }
+                } else {
+                    alert('Please install MetaMask to interact with the blockchain.');
+                }
+            });
+
+            addPatientButton.click(async () => {
+                try {
+                    const name = nameInput.val();
+                    const age = ageInput.val();
+                    const medicalHistory = medicalHistoryInput.val();
+
+                    if (contract && contract.methods) {
+                        await contract.methods.addPatient(name, age, medicalHistory).send({ from: account });
+                        console.log('Patient added:', { name, age, medicalHistory });
+                        nameInput.val('');
+                        ageInput.val('');
+                        medicalHistoryInput.val('');
+                    } else {
+                        console.error('Contract methods are undefined.');
+                    }
+                } catch (error) {
+                    console.error('Error adding patient:', error);
+                }
+            });
+
+            getPatientButton.click(async () => {
+                try {
+                    const patient = await contract.methods.getPatient().call({ from: account });
+                    patientInfo.text(`Name: ${patient.name}, Age: ${patient.age}, Medical History: ${patient.medicalHistory}`);
+                } catch (error) {
+                    console.error('Error fetching patient info:', error);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
